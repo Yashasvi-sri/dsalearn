@@ -328,7 +328,7 @@ function lessonPage() {
       </aside>
       <section class="lesson-player">
         <div class="video-frame">
-          ${activeLesson.loomUrl ? `<iframe title="${escapeHtml(activeLesson.title)}" src="${escapeHtml(toEmbedUrl(activeLesson.loomUrl))}" allowfullscreen></iframe><div class="loom-control-cover" aria-hidden="true"></div>` : `
+          ${activeLesson.loomUrl ? `<iframe title="${escapeHtml(activeLesson.title)}" src="${escapeHtml(toEmbedUrl(activeLesson.loomUrl))}" allowfullscreen></iframe>` : `
             <div class="empty-video"><strong>Loom video not uploaded yet</strong><span>Admin can add the Loom link from Admin Controls.</span></div>
           `}
         </div>

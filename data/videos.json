@@ -110,7 +110,14 @@
     "sheet": "GST VIDEOS",
     "row": 15,
     "summary": "In this video, we will teach you how to download and install the GST offline tool. Whenever your internet goes down, or the GST website is not working, or anything else prevents you from working in the GST portal, you will use the GST Offline Tool. This tool will help you upload all your data to the portal without having to enter every invoice manually. But for that, the government has some fixed format which you need to follow, then only it will accept it other wise it will show the error, and then you need to do everything manually, as we have shown you in the above videos.",
-    "resources": []
+    "resources": [
+      {
+        "id": "resource-10-1",
+        "title": "GST Offline Tool Login Guide",
+        "url": "https://www.gst.gov.in/download/returns",
+        "type": "Link"
+      }
+    ]
   },
   {
     "title": "DOWNLOAD THE GSTR-1 WORKING TEMPLATE IN CSV FILE",
@@ -118,7 +125,14 @@
     "sheet": "GST VIDEOS",
     "row": 16,
     "summary": "How to download the working template format, which is set by the government in the CSV format.",
-    "resources": []
+    "resources": [
+      {
+        "id": "resource-11-1",
+        "title": "GST Offline Tools CSV File Template.csv",
+        "url": "./assets/resources/GST Offline Tools CSV File Template.csv",
+        "type": "CSV file"
+      }
+    ]
   },
   {
     "title": "UPLOAD THE WORKING IN OFFLINE TOOL, DOWNLOAD THE JSON FILE AND UPLOAD IT IN THE GST PORTAL.",

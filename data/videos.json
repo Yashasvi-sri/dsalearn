@@ -3,7 +3,16 @@
     "title": "GST LOGIN WITH THE CLIENT CREDIDENTIALS",
     "loomUrl": "https://www.loom.com/share/19eee0ee0d3d418eb0b15c88041393f5",
     "sheet": "GST VIDEOS",
-    "row": 6
+    "row": 6,
+    "summary": "This video teaches you how to log in to the GST portal with the client credentials, but before that you need to have the client's user ID and password.",
+    "resources": [
+      {
+        "id": "resource-1-1",
+        "title": "GST Login Page Link",
+        "url": "https://services.gst.gov.in/services/login",
+        "type": "Link"
+      }
+    ]
   },
   {
     "title": "HOW TO MAKE A WORKING FOR A CLIENT",
@@ -24,60 +33,80 @@
     "title": "FEED THE WORKING IN GSTR-1 FOR B2B",
     "loomUrl": "https://www.loom.com/share/bf47a7f2cba748739ff264ef5130ce77",
     "sheet": "GST VIDEOS",
-    "row": 8
+    "row": 8,
+    "summary": "After making the working for the client, start feeding each sales invoice under the GSTR-1. There can be multiple sales invoices in a month, so make sure each invoice is fed into the portal. GSTR-1 is all about telling the government how much sales we have done in a particular month, from B2B and B2C in a month. Important Date you need to remember: Due Date for GSTR-1 is the 11th of every month.",
+    "resources": []
   },
   {
     "title": "DEBIT AND CREDIT NOTE ENTRY IN PORTAL",
     "loomUrl": "https://www.loom.com/share/3cc38e66c8f640b29280826030cab583",
     "sheet": "GST VIDEOS",
-    "row": 9
+    "row": 9,
+    "summary": "CREDIT NOTE: If the sales value was increased in the previous month by mistake and we now need to rectify it, we will issue the credit note this month. DEBIT NOTE: If the sales value was decreased in the previous month by mistake and we now need to rectify it, we will issue the debit note this month. These are the values you need to make sure you feed them correctly in the portal: CREDIT NOTE NO. means Invoice No. NOTE VALUE means Invoice Value NOTE TYPE means whether it is a Debit or a Credit Note.",
+    "resources": []
   },
   {
     "title": "FEEDING FOR THE B2C IN THE PORTAL",
     "loomUrl": "https://www.loom.com/share/dc276028bf4a45b4bd0d005c92fae85b",
     "sheet": "GST VIDEOS",
-    "row": 10
+    "row": 10,
+    "summary": "In the B2B, we do the invoice-wise feeding. In the B2C, we do the rate-wise feeding because for every good, there is a different rate set up by the government.",
+    "resources": []
   },
   {
     "title": "FILE HSN IN THE PORTAL",
     "loomUrl": "https://www.loom.com/share/e4fd5ece9305424795bd73396186fc6a",
     "sheet": "GST VIDEOS",
-    "row": 11
+    "row": 11,
+    "summary": "In this video, you will learn about the HSN feeding. Always remember: For every client, you need to make working (if required, ask your supervisor)  + feed each sales invoice + HSN + Document Summary. And then create the summary to check whether you have done right or not.",
+    "resources": []
   },
   {
     "title": "DOCUMENT ISSUED FILING IN THE PORTAL",
     "loomUrl": "https://www.loom.com/share/218b3c8f96de484ca4f53dfaf059623b",
     "sheet": "GST VIDEOS",
-    "row": 12
+    "row": 12,
+    "summary": "In this video, you will learn how to do a document summary.",
+    "resources": []
   },
   {
     "title": "CREATE SUMMARY",
     "loomUrl": "https://www.loom.com/share/4c9f88974e564fd6b8f44668e38e1bf6",
     "sheet": "GST VIDEOS",
-    "row": 13
+    "row": 13,
+    "summary": "In this video, we are generating the summary. We do this because we need to recheck whether we have done everything right or not.",
+    "resources": []
   },
   {
     "title": "INTRODUCTION TO GSTR-3B",
     "loomUrl": "https://www.loom.com/share/46f88a0cb552400c93e7a8215b8bd471",
     "sheet": "GST VIDEOS",
-    "row": 14
+    "row": 14,
+    "summary": "After feeding the GSTR-1 now it's time to move towards GSTR-3B, where we will pay the taxes to the government. GSTR-1 was all about telling the government how much sales we have done in a particular month. GSTR-3B is all about filing the tax on those sales. Important Dates you need to remember: Due Date for GSTR-1 is the 11th of every month. Due Date for GSTR-3B is the 22nd of every month.",
+    "resources": []
   },
   {
     "title": "DOWNLOAD AND INSTALL GST OFFLINE TOOL",
     "loomUrl": "https://www.loom.com/share/f902a7e97fce4401956e38ab8ae05651",
     "sheet": "GST VIDEOS",
-    "row": 15
+    "row": 15,
+    "summary": "In this video, we will teach you how to download and install the GST offline tool. Whenever your internet goes down, or the GST website is not working, or anything else prevents you from working in the GST portal, you will use the GST Offline Tool. This tool will help you upload all your data to the portal without having to enter every invoice manually. But for that, the government has some fixed format which you need to follow, then only it will accept it other wise it will show the error, and then you need to do everything manually, as we have shown you in the above videos.",
+    "resources": []
   },
   {
     "title": "DOWNLOAD THE GSTR-1 WORKING TEMPLATE IN CSV FILE",
     "loomUrl": "https://www.loom.com/share/7a77e136b7e1434995802dd7ab871376",
     "sheet": "GST VIDEOS",
-    "row": 16
+    "row": 16,
+    "summary": "How to download the working template format, which is set by the government in the CSV format.",
+    "resources": []
   },
   {
     "title": "UPLOAD THE WORKING IN OFFLINE TOOL, DOWNLOAD THE JSON FILE AND UPLOAD IT IN THE GST PORTAL.",
     "loomUrl": "https://www.loom.com/share/49260a9ab90c46b58d6e1160f66db867",
     "sheet": "GST VIDEOS",
-    "row": 17
+    "row": 17,
+    "summary": "In this video, you will learn how to download the JSON file and upload it to the GST portal after making your working with the given format.",
+    "resources": []
   }
 ]

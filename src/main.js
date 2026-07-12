@@ -67,20 +67,13 @@ function buildLessons(videoRows) {
   duration: "5 min",
   loomUrl: video.loomUrl,
   summary: video.summary || "This video was synced from the DSA LP VIDEOS FILE Excel sheet.",
-  resources: Array.isArray(video.resources) && video.resources.length > 0 ? video.resources.map((resource, resourceIndex) => ({
+  resources: Array.isArray(video.resources) ? video.resources.map((resource, resourceIndex) => ({
     id: resource.id || `resource-${index + 1}-${resourceIndex + 1}`,
     title: resource.title || `${video.title} resource notes`,
     url: resource.url || video.loomUrl,
     type: resource.type || "Link",
     isFile: Boolean(resource.isFile)
-  })) : [
-    {
-      id: `resource-${index + 1}-1`,
-      title: `${video.title} resource notes`,
-      url: video.loomUrl,
-      type: "Video link"
-    }
-  ]
+  })) : []
   }));
 }
 

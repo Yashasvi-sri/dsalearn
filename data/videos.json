@@ -83,7 +83,26 @@
     "sheet": "GST VIDEOS",
     "row": 14,
     "summary": "After feeding the GSTR-1 now it's time to move towards GSTR-3B, where we will pay the taxes to the government. GSTR-1 was all about telling the government how much sales we have done in a particular month. GSTR-3B is all about filing the tax on those sales. Important Dates you need to remember: Due Date for GSTR-1 is the 11th of every month. Due Date for GSTR-3B is the 22nd of every month.",
-    "resources": []
+    "resources": [
+      {
+        "id": "resource-9-1",
+        "title": "GSTR-3B",
+        "url": "https://services.gst.gov.in/services/login",
+        "type": "Link"
+      },
+      {
+        "id": "resource-9-2",
+        "title": "GSTR-3B Due dates",
+        "url": "https://www.gst.gov.in/help/returns",
+        "type": "Link"
+      },
+      {
+        "id": "resource-9-3",
+        "title": "Differences between GSTR-1 Vs GSTR-3B",
+        "url": "https://tutorial.gst.gov.in/userguide/returns/index.htm",
+        "type": "Link"
+      }
+    ]
   },
   {
     "title": "DOWNLOAD AND INSTALL GST OFFLINE TOOL",

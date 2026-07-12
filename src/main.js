@@ -66,8 +66,14 @@ function buildLessons(videoRows) {
   title: video.title,
   duration: "5 min",
   loomUrl: video.loomUrl,
-  summary: "This video was synced from the DSA LP VIDEOS FILE Excel sheet.",
-  resources: [
+  summary: video.summary || "This video was synced from the DSA LP VIDEOS FILE Excel sheet.",
+  resources: Array.isArray(video.resources) && video.resources.length > 0 ? video.resources.map((resource, resourceIndex) => ({
+    id: resource.id || `resource-${index + 1}-${resourceIndex + 1}`,
+    title: resource.title || `${video.title} resource notes`,
+    url: resource.url || video.loomUrl,
+    type: resource.type || "Link",
+    isFile: Boolean(resource.isFile)
+  })) : [
     {
       id: `resource-${index + 1}-1`,
       title: `${video.title} resource notes`,
@@ -116,7 +122,12 @@ function shouldReplaceStoredLessons(lessons) {
 }
 
 function lessonSignature(lessons) {
-  return lessons.map((lesson) => `${lesson.title}|${lesson.loomUrl}`).join("::");
+  return lessons.map((lesson) => {
+    const resources = Array.isArray(lesson.resources)
+      ? lesson.resources.map((resource) => `${resource.title}|${resource.url}|${resource.type}`).join(";;")
+      : "";
+    return `${lesson.title}|${lesson.loomUrl}|${lesson.summary}|${resources}`;
+  }).join("::");
 }
 
 function readStore(key, fallback) {

@@ -9,7 +9,16 @@
     "title": "HOW TO MAKE A WORKING FOR A CLIENT",
     "loomUrl": "https://www.loom.com/share/c0033abcd28e4e899550e4d584ecc004",
     "sheet": "GST VIDEOS",
-    "row": 7
+    "row": 7,
+    "summary": "This video teaches you how to do a working for the client in the Excel sheet, and there is a proper format followed by the DSA which you need to follow. The template will be shared by you in the resources section. You can download it and give the name for the working sheet just like this: [Name of the client] Working [Year]",
+    "resources": [
+      {
+        "id": "resource-2-1",
+        "title": "GST Working Template for B2B.xlsx",
+        "url": "./assets/resources/GST Working Template for B2B.xlsx",
+        "type": "Excel sheet"
+      }
+    ]
   },
   {
     "title": "FEED THE WORKING IN GSTR-1 FOR B2B",

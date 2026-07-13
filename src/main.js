@@ -1,5 +1,5 @@
 const adminAccount = {
-  name: "Alyssa Sharma",
+  name: "Ritesh Srivastava",
   email: "admin@dsafirm.com",
   password: "admin123",
   role: "admin"

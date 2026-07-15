@@ -9,7 +9,7 @@ const YASH_ASSISTANT_URL = "https://chatgpt.com/g/g-6a5354a7412c8191af5748f47ff5
 
 const defaultVideoRows = [
   {
-    title: "GST LOGIN WITH THE CLIENT CREDIDENTIALS",
+    title: "GST LOGIN WITH THE CLIENT CREDENTIALS",
     loomUrl: "https://www.loom.com/share/19eee0ee0d3d418eb0b15c88041393f5"
   },
   {

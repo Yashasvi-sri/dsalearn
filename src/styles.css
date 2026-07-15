@@ -250,6 +250,30 @@ textarea {
   line-height: 20px;
 }
 
+.auth-link {
+  justify-self: center;
+}
+
+.reset-form[hidden],
+#auth-form[hidden] {
+  display: none;
+}
+
+.reset-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.reset-heading p {
+  margin: 0;
+}
+
+.reset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);
@@ -591,6 +615,11 @@ h3 {
   background: var(--color-success-soft);
 }
 
+.status-pill.danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
 .lesson-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
@@ -923,6 +952,7 @@ h3 {
 .intern-row div {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .intern-row span,
@@ -1004,7 +1034,12 @@ h3 {
   }
 
   .resource-edit-row,
-  .resource-row {
+  .resource-row,
+  .intern-row {
     grid-template-columns: 1fr;
+  }
+
+  .intern-row {
+    align-items: stretch;
   }
 }

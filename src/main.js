@@ -94,6 +94,9 @@ const state = {
   assistantMessages: {}
 };
 
+state.interns = normalizeInterns(state.interns);
+writeStore("dsa_interns", state.interns);
+
 if (state.session && state.session.email === adminAccount.email) {
   state.session = adminAccount;
   writeStore("dsa_session", state.session);
@@ -134,6 +137,20 @@ function readStore(key, fallback) {
 
 function writeStore(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function normalizeInterns(interns) {
+  if (!Array.isArray(interns)) return [];
+  return interns.map((intern) => ({
+    id: intern.id || makeId(),
+    name: intern.name || "",
+    email: String(intern.email || "").trim().toLowerCase(),
+    password: intern.password || "",
+    active: intern.active !== false,
+    createdAt: intern.createdAt || "Earlier account",
+    signedOutAt: intern.signedOutAt || "",
+    passwordResetAt: intern.passwordResetAt || ""
+  }));
 }
 
 function escapeHtml(value) {
@@ -252,6 +269,20 @@ function authScreen() {
           <label>Password<input name="password" type="password" autocomplete="current-password"></label>
           <p class="form-message" id="auth-message"></p>
           <button class="primary-button" type="submit">Login</button>
+          <button class="ghost-button auth-link" type="button" data-action="show-password-reset">Forgot login details?</button>
+        </form>
+        <form class="form-stack reset-form" id="reset-form" hidden>
+          <div class="reset-heading">
+            <h3>Reset intern password</h3>
+            <p class="muted">Enter the email used for the intern account. After the reset email is confirmed, set a new password.</p>
+          </div>
+          <label>Email ID<input name="resetEmail" type="email" autocomplete="email"></label>
+          <label>New password<input name="newPassword" type="password" autocomplete="new-password"></label>
+          <p class="form-message" id="reset-message"></p>
+          <div class="reset-actions">
+            <button class="primary-button" type="submit">Reset password</button>
+            <button class="ghost-button" type="button" data-action="hide-password-reset">Back to login</button>
+          </div>
         </form>
       </section>
     </div>
@@ -409,12 +440,22 @@ function adminPage() {
         </section>
         <section class="admin-panel">
           <h3>Intern accounts</h3>
+          <p class="muted">This list keeps each intern account record with status and account activity dates. The export keeps only name, email ID, and password.</p>
           <div class="intern-list">
             ${state.interns.length === 0 ? `<p class="muted">No intern accounts yet.</p>` : ""}
             ${state.interns.map((intern) => `
               <div class="intern-row">
-                <div><strong>${escapeHtml(intern.name)}</strong><span>${escapeHtml(intern.email)}</span><small>${intern.active ? "Active" : "Signed out"}</small></div>
-                <button class="danger-button" data-signout-intern="${escapeHtml(intern.email)}">Sign out</button>
+                <div>
+                  <strong>${escapeHtml(intern.name)}</strong>
+                  <span>${escapeHtml(intern.email)}</span>
+                  <small>Status: ${intern.active ? "Active" : "Signed out"}</small>
+                  <small>Joined: ${escapeHtml(intern.createdAt)}</small>
+                  <small>${intern.signedOutAt ? `Signed out: ${escapeHtml(intern.signedOutAt)}` : "Signed out: Not applicable"}</small>
+                  <small>${intern.passwordResetAt ? `Password reset: ${escapeHtml(intern.passwordResetAt)}` : "Password reset: Not requested"}</small>
+                </div>
+                ${intern.active
+                  ? `<button class="danger-button" data-signout-intern="${escapeHtml(intern.email)}">Sign out</button>`
+                  : `<span class="status-pill danger">Access blocked</span>`}
               </div>
             `).join("")}
           </div>
@@ -466,6 +507,15 @@ function bindEvents() {
 
   const authForm = document.getElementById("auth-form");
   if (authForm) authForm.addEventListener("submit", authSubmit);
+
+  const resetForm = document.getElementById("reset-form");
+  if (resetForm) resetForm.addEventListener("submit", passwordResetSubmit);
+
+  const showResetButton = document.querySelector("[data-action='show-password-reset']");
+  if (showResetButton) showResetButton.addEventListener("click", showPasswordReset);
+
+  const hideResetButton = document.querySelector("[data-action='hide-password-reset']");
+  if (hideResetButton) hideResetButton.addEventListener("click", hidePasswordReset);
 
   document.querySelectorAll("[data-lesson-field]").forEach((field) => {
     field.addEventListener("change", () => {
@@ -521,7 +571,11 @@ function bindEvents() {
   document.querySelectorAll("[data-signout-intern]").forEach((button) => {
     button.addEventListener("click", () => {
       const email = button.dataset.signoutIntern;
-      state.interns = state.interns.map((intern) => intern.email === email ? { ...intern, active: false } : intern);
+      state.interns = state.interns.map((intern) => intern.email === email ? {
+        ...intern,
+        active: false,
+        signedOutAt: new Date().toLocaleString()
+      } : intern);
       writeStore("dsa_interns", state.interns);
       render();
     });
@@ -540,6 +594,7 @@ function setAuthMode(mode) {
   document.getElementById("name-field").hidden = mode !== "signup";
   form.querySelector("button[type='submit']").textContent = mode === "login" ? "Login" : "Create account";
   document.getElementById("auth-message").textContent = "";
+  hidePasswordReset();
 }
 
 function authSubmit(event) {
@@ -563,7 +618,7 @@ function authSubmit(event) {
       return;
     }
     if (!intern.active) {
-      message.textContent = "This intern account has been signed out by admin.";
+      message.textContent = "This intern account has been signed out by admin and cannot access the portal.";
       return;
     }
     state.session = { name: intern.name, email: intern.email, role: "intern" };
@@ -577,11 +632,29 @@ function authSubmit(event) {
     message.textContent = "Please enter name, email, and password.";
     return;
   }
-  if (state.interns.some((intern) => intern.email === email)) {
+  const existingIntern = state.interns.find((intern) => intern.email === email);
+  if (existingIntern && existingIntern.active) {
     message.textContent = "An account already exists for this email.";
     return;
   }
-  const intern = { id: makeId(), name, email, password, active: true, createdAt: new Date().toLocaleString() };
+  if (existingIntern && !existingIntern.active) {
+    message.textContent = "Admin has signed out this intern. The same name and email cannot be used to create another account.";
+    return;
+  }
+  if (state.interns.some((intern) => normalizeText(intern.name) === normalizeText(name) && intern.email === email)) {
+    message.textContent = "This intern name and email are already recorded.";
+    return;
+  }
+  const intern = {
+    id: makeId(),
+    name,
+    email,
+    password,
+    active: true,
+    createdAt: new Date().toLocaleString(),
+    signedOutAt: "",
+    passwordResetAt: ""
+  };
   state.interns = [...state.interns, intern];
   writeStore("dsa_interns", state.interns);
   state.session = { name, email, role: "intern" };
@@ -597,6 +670,60 @@ function toggleComplete(lessonId) {
     : [...current, lessonId];
   writeStore("dsa_completed", state.completed);
   render();
+}
+
+function showPasswordReset() {
+  const resetForm = document.getElementById("reset-form");
+  const authForm = document.getElementById("auth-form");
+  if (!resetForm || !authForm) return;
+  authForm.hidden = true;
+  resetForm.hidden = false;
+  document.getElementById("reset-message").textContent = "";
+}
+
+function hidePasswordReset() {
+  const resetForm = document.getElementById("reset-form");
+  const authForm = document.getElementById("auth-form");
+  if (!resetForm || !authForm) return;
+  resetForm.hidden = true;
+  authForm.hidden = false;
+  document.getElementById("reset-message").textContent = "";
+}
+
+function passwordResetSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const email = String(data.get("resetEmail") || "").trim().toLowerCase();
+  const newPassword = String(data.get("newPassword") || "");
+  const message = document.getElementById("reset-message");
+  const intern = state.interns.find((item) => item.email === email);
+
+  if (!email || !newPassword) {
+    message.textContent = "Please enter your email ID and new password.";
+    return;
+  }
+  if (!intern) {
+    message.textContent = "No intern account exists for this email ID.";
+    return;
+  }
+  if (!intern.active) {
+    message.textContent = "This intern account was signed out by admin and cannot be reset.";
+    return;
+  }
+
+  state.interns = state.interns.map((item) => item.email === email ? {
+    ...item,
+    password: newPassword,
+    passwordResetAt: new Date().toLocaleString()
+  } : item);
+  writeStore("dsa_interns", state.interns);
+  form.reset();
+  message.textContent = "Password reset email confirmed. You can now log in with the new password.";
+}
+
+function normalizeText(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function addUploadedResource(lessonId, file) {
@@ -650,13 +777,11 @@ function fileTypeLabel(fileName) {
 }
 
 function exportCsv() {
-  const header = ["Name", "Email ID", "Password", "Status", "Created At"];
+  const header = ["Name", "Email ID", "Password"];
   const rows = state.interns.map((intern) => [
     intern.name,
     intern.email,
-    intern.password,
-    intern.active ? "Active" : "Signed out",
-    intern.createdAt
+    intern.password
   ]);
   const csv = [header, ...rows]
     .map((row) => row.map((cell) => `"${String(cell).split('"').join('""')}"`).join(","))

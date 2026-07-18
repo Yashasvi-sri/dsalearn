@@ -6,6 +6,7 @@ const adminAccount = {
 };
 
 const YASH_ASSISTANT_URL = "https://chatgpt.com/g/g-6a5354a7412c8191af5748f47ff577fe-yash";
+const PORTAL_GUIDE_URL = "https://www.loom.com/share/6dcbd61b938c4206b869abb03c449f90";
 
 const defaultVideoRows = [
   {
@@ -323,11 +324,19 @@ function dashboard() {
         </div>
         <button class="accent-button" data-view="videos">Play Continue</button>
       </section>
-      <section class="progress-card">
-        <div class="section-heading"><h3>Learning progress</h3><span>${completed.length} of ${state.lessons.length} videos completed</span></div>
-        <div class="progress-bar"><span style="width:${progressValue()}%"></span></div>
-        <p>Next lesson: <strong>${escapeHtml(nextLesson.title)}</strong></p>
-      </section>
+      <div class="dashboard-progress-row">
+        <section class="progress-card">
+          <div class="section-heading"><h3>Learning progress</h3><span>${completed.length} of ${state.lessons.length} videos completed</span></div>
+          <div class="progress-bar"><span style="width:${progressValue()}%"></span></div>
+          <p>Next lesson: <strong>${escapeHtml(nextLesson.title)}</strong></p>
+        </section>
+        <section class="portal-guide-card">
+          <div class="section-heading"><div><span class="eyebrow">Portal guide</span><h3>How to use DSA Learning Portal</h3></div></div>
+          <div class="portal-guide-frame">
+            <iframe title="How to use DSA Learning Portal" src="${escapeHtml(toEmbedUrl(PORTAL_GUIDE_URL))}" allowfullscreen></iframe>
+          </div>
+        </section>
+      </div>
       <section class="dashboard-actions">
         <button class="feature-card video-card" data-view="videos">
           <span class="feature-icon">Play</span><span>Videos Page</span><small>Watch all 12 Loom sessions and open lesson resources.</small>

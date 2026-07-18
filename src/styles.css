@@ -60,6 +60,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -744,6 +749,41 @@ h3 {
   color: rgba(255, 255, 255, 0.74);
 }
 
+.watch-gate {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(220px, 1.1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-warning-soft);
+}
+
+.watch-gate.ready {
+  background: var(--color-success-soft);
+}
+
+.watch-gate h3 {
+  color: var(--color-primary);
+}
+
+.watch-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.watch-progress .progress-bar {
+  margin-top: 0;
+}
+
+.watch-progress small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 16px;
+}
+
 .lesson-meta {
   display: flex;
   align-items: flex-start;
@@ -961,6 +1001,45 @@ h3 {
   font-size: 12px;
 }
 
+.confetti-layer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti-layer span {
+  position: absolute;
+  top: -24px;
+  left: var(--left);
+  width: var(--size);
+  height: calc(var(--size) * 1.45);
+  border-radius: 3px;
+  background: var(--confetti-color);
+  opacity: 0.95;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  animation: confetti-fall 1500ms ease-out var(--delay) forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -24px, 0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(var(--drift), 108vh, 0) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-layer span {
+    animation-duration: 1ms;
+  }
+}
+
 @media (max-width: 1180px) {
   .lesson-layout,
   .admin-grid {
@@ -1035,7 +1114,8 @@ h3 {
 
   .resource-edit-row,
   .resource-row,
-  .intern-row {
+  .intern-row,
+  .watch-gate {
     grid-template-columns: 1fr;
   }
 

@@ -84,6 +84,10 @@ const icons = {
   delete: "x"
 };
 
+const WATCH_TIMER_INTERVAL_MS = 1000;
+const confettiColors = ["#b53524", "#6d4fb3", "#2e7d4f", "#b06c1d", "#fff1e6"];
+let activeWatchTimer = null;
+
 const state = {
   lessons: readStore("dsa_lessons", initialLessons),
   interns: readStore("dsa_interns", []),
@@ -91,6 +95,7 @@ const state = {
   view: "dashboard",
   activeLessonId: "lesson-1",
   completed: readStore("dsa_completed", {}),
+  watchProgress: readStore("dsa_watch_progress", {}),
   assistantMessages: {}
 };
 
@@ -163,8 +168,10 @@ function escapeHtml(value) {
 }
 
 function render() {
+  stopLessonWatchTimer();
   document.getElementById("root").innerHTML = state.session ? appShell() : authScreen();
   bindEvents();
+  startLessonWatchTimer();
 }
 
 function loadSyncedVideos() {
@@ -347,6 +354,11 @@ function lessonPage() {
   const completed = currentCompleted();
   const activeLesson = state.lessons.find((lesson) => lesson.id === state.activeLessonId) || state.lessons[0];
   const isComplete = completed.includes(activeLesson.id);
+  const requiredSeconds = requiredWatchSeconds(activeLesson);
+  const watchedSeconds = currentWatchSeconds(activeLesson.id);
+  const isReady = isComplete || !activeLesson.loomUrl || watchedSeconds >= requiredSeconds;
+  const watchPercent = Math.min(100, Math.round((watchedSeconds / requiredSeconds) * 100));
+  const remainingSeconds = Math.max(0, requiredSeconds - watchedSeconds);
   return `
     <div class="lesson-layout">
       <aside class="lesson-list">
@@ -363,9 +375,23 @@ function lessonPage() {
             <div class="empty-video"><strong>Loom video not uploaded yet</strong><span>Admin can add the Loom link from Admin Controls.</span></div>
           `}
         </div>
+        <div class="watch-gate ${isReady ? "ready" : ""}">
+          <div>
+            <span class="eyebrow">Video watch progress</span>
+            <h3>${isComplete ? "Completed" : isReady ? "Ready to complete" : "Watch the full video to unlock OK"}</h3>
+          </div>
+          <div class="watch-progress">
+            <div class="progress-bar"><span style="width:${watchPercent}%"></span></div>
+            <small>${isComplete ? "This video is already completed." : `${formatTime(watchedSeconds)} watched of ${formatTime(requiredSeconds)}${remainingSeconds ? ` - ${formatTime(remainingSeconds)} remaining` : ""}`}</small>
+          </div>
+        </div>
         <div class="lesson-meta">
           <div><span class="eyebrow">Current video</span><h1>${escapeHtml(activeLesson.title)}</h1><p>${escapeHtml(activeLesson.summary)}</p></div>
-          <button class="${isComplete ? "secondary-button" : "accent-button"}" data-complete="${activeLesson.id}">${icons.check} ${isComplete ? "Mark incomplete" : "Mark complete"}</button>
+          <button
+            class="${isComplete ? "secondary-button" : "accent-button"}"
+            data-complete="${activeLesson.id}"
+            ${isReady && !isComplete ? "" : "disabled"}
+          >${icons.check} ${isComplete ? "Completed" : isReady ? "OK" : "Locked"}</button>
         </div>
         <div class="resource-list">
           <h3>Material for this video</h3>
@@ -498,7 +524,7 @@ function bindEvents() {
   }
 
   document.querySelectorAll("[data-complete]").forEach((button) => {
-    button.addEventListener("click", () => toggleComplete(button.dataset.complete));
+    button.addEventListener("click", () => markComplete(button.dataset.complete));
   });
 
   document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -662,14 +688,110 @@ function authSubmit(event) {
   render();
 }
 
-function toggleComplete(lessonId) {
+function markComplete(lessonId) {
+  const lesson = state.lessons.find((item) => item.id === lessonId);
+  if (!lesson || currentCompleted().includes(lessonId)) return;
+  if (lesson.loomUrl && currentWatchSeconds(lessonId) < requiredWatchSeconds(lesson)) return;
+
   const email = state.session.email;
   const current = state.completed[email] || [];
-  state.completed[email] = current.includes(lessonId)
-    ? current.filter((id) => id !== lessonId)
-    : [...current, lessonId];
+  state.completed[email] = [...current, lessonId];
   writeStore("dsa_completed", state.completed);
+  showConfetti();
   render();
+}
+
+function startLessonWatchTimer() {
+  if (!state.session || state.view !== "lesson" || state.session.role === "admin") return;
+  const lesson = state.lessons.find((item) => item.id === state.activeLessonId);
+  if (!lesson || !lesson.loomUrl || currentCompleted().includes(lesson.id)) return;
+  if (currentWatchSeconds(lesson.id) >= requiredWatchSeconds(lesson)) return;
+
+  activeWatchTimer = window.setInterval(() => {
+    if (document.hidden) return;
+    const email = state.session.email;
+    const currentUserProgress = state.watchProgress[email] || {};
+    const nextSeconds = Math.min(
+      requiredWatchSeconds(lesson),
+      (currentUserProgress[lesson.id] || 0) + 1
+    );
+
+    state.watchProgress[email] = {
+      ...currentUserProgress,
+      [lesson.id]: nextSeconds
+    };
+    writeStore("dsa_watch_progress", state.watchProgress);
+    updateWatchGate(lesson, nextSeconds);
+
+    if (nextSeconds >= requiredWatchSeconds(lesson)) {
+      stopLessonWatchTimer();
+    }
+  }, WATCH_TIMER_INTERVAL_MS);
+}
+
+function stopLessonWatchTimer() {
+  if (!activeWatchTimer) return;
+  window.clearInterval(activeWatchTimer);
+  activeWatchTimer = null;
+}
+
+function updateWatchGate(lesson, watchedSeconds) {
+  const requiredSeconds = requiredWatchSeconds(lesson);
+  const watchGate = document.querySelector(".watch-gate");
+  const watchBar = document.querySelector(".watch-progress .progress-bar span");
+  const watchText = document.querySelector(".watch-progress small");
+  const watchTitle = document.querySelector(".watch-gate h3");
+  const completeButton = Array.from(document.querySelectorAll("[data-complete]"))
+    .find((button) => button.dataset.complete === lesson.id);
+  const watchPercent = Math.min(100, Math.round((watchedSeconds / requiredSeconds) * 100));
+  const remainingSeconds = Math.max(0, requiredSeconds - watchedSeconds);
+
+  if (watchBar) watchBar.style.width = `${watchPercent}%`;
+  if (watchText) {
+    watchText.textContent = `${formatTime(watchedSeconds)} watched of ${formatTime(requiredSeconds)}${remainingSeconds ? ` - ${formatTime(remainingSeconds)} remaining` : ""}`;
+  }
+  if (watchTitle && remainingSeconds === 0) watchTitle.textContent = "Ready to complete";
+  if (watchGate && remainingSeconds === 0) watchGate.classList.add("ready");
+  if (completeButton && remainingSeconds === 0) {
+    completeButton.disabled = false;
+    completeButton.textContent = `${icons.check} OK`;
+  }
+}
+
+function currentWatchSeconds(lessonId) {
+  if (!state.session) return 0;
+  return Number(state.watchProgress[state.session.email]?.[lessonId] || 0);
+}
+
+function requiredWatchSeconds(lesson) {
+  const duration = String(lesson?.duration || "");
+  const minuteMatch = duration.match(/(\d+(?:\.\d+)?)\s*min/i);
+  const secondMatch = duration.match(/(\d+(?:\.\d+)?)\s*sec/i);
+  if (minuteMatch) return Math.max(1, Math.round(Number(minuteMatch[1]) * 60));
+  if (secondMatch) return Math.max(1, Math.round(Number(secondMatch[1])));
+  return 300;
+}
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function showConfetti() {
+  const confetti = document.createElement("div");
+  confetti.className = "confetti-layer";
+  confetti.setAttribute("aria-hidden", "true");
+  confetti.innerHTML = Array.from({ length: 64 }, (_, index) => {
+    const color = confettiColors[index % confettiColors.length];
+    const left = Math.round(Math.random() * 100);
+    const delay = Math.round(Math.random() * 320);
+    const drift = Math.round((Math.random() * 160) - 80);
+    const size = 8 + Math.round(Math.random() * 7);
+    return `<span style="--left:${left}%;--delay:${delay}ms;--drift:${drift}px;--size:${size}px;--confetti-color:${color};"></span>`;
+  }).join("");
+  document.body.appendChild(confetti);
+  window.setTimeout(() => confetti.remove(), 1800);
 }
 
 function showPasswordReset() {

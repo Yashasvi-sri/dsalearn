@@ -10,50 +10,62 @@ const YASH_ASSISTANT_URL = "https://chatgpt.com/g/g-6a5354a7412c8191af5748f47ff5
 const defaultVideoRows = [
   {
     title: "GST LOGIN WITH THE CLIENT CREDENTIALS",
+    durationSeconds: 104,
     loomUrl: "https://www.loom.com/share/19eee0ee0d3d418eb0b15c88041393f5"
   },
   {
     title: "HOW TO MAKE A WORKING FOR A CLIENT",
+    durationSeconds: 266,
     loomUrl: "https://www.loom.com/share/c0033abcd28e4e899550e4d584ecc004"
   },
   {
     title: "FEED THE WORKING IN GSTR-1 FOR B2B",
+    durationSeconds: 184,
     loomUrl: "https://www.loom.com/share/bf47a7f2cba748739ff264ef5130ce77"
   },
   {
     title: "DEBIT AND CREDIT NOTE ENTRY IN PORTAL",
+    durationSeconds: 191,
     loomUrl: "https://www.loom.com/share/3cc38e66c8f640b29280826030cab583"
   },
   {
     title: "FEEDING FOR THE B2C IN THE PORTAL",
+    durationSeconds: 205,
     loomUrl: "https://www.loom.com/share/dc276028bf4a45b4bd0d005c92fae85b"
   },
   {
     title: "FILE HSN IN THE PORTAL",
+    durationSeconds: 223,
     loomUrl: "https://www.loom.com/share/e4fd5ece9305424795bd73396186fc6a"
   },
   {
     title: "DOCUMENT ISSUED FILING IN THE PORTAL",
+    durationSeconds: 198,
     loomUrl: "https://www.loom.com/share/218b3c8f96de484ca4f53dfaf059623b"
   },
   {
     title: "CREATE SUMMARY",
+    durationSeconds: 161,
     loomUrl: "https://www.loom.com/share/4c9f88974e564fd6b8f44668e38e1bf6"
   },
   {
     title: "INTRODUCTION TO GSTR-3B",
+    durationSeconds: 300,
     loomUrl: "https://www.loom.com/share/46f88a0cb552400c93e7a8215b8bd471"
   },
   {
     title: "DOWNLOAD AND INSTALL GST OFFLINE TOOL",
+    durationSeconds: 199,
     loomUrl: "https://www.loom.com/share/f902a7e97fce4401956e38ab8ae05651"
   },
   {
     title: "DOWNLOAD THE GSTR-1 WORKING TEMPLATE IN CSV FILE",
+    durationSeconds: 134,
     loomUrl: "https://www.loom.com/share/7a77e136b7e1434995802dd7ab871376"
   },
   {
     title: "UPLOAD THE WORKING IN OFFLINE TOOL, DOWNLOAD THE JSON FILE AND UPLOAD IT IN THE GST PORTAL.",
+    durationSeconds: 254,
     loomUrl: "https://www.loom.com/share/49260a9ab90c46b58d6e1160f66db867"
   }
 ];
@@ -64,7 +76,8 @@ function buildLessons(videoRows) {
   return videoRows.map((video, index) => ({
   id: `lesson-${index + 1}`,
   title: video.title,
-  duration: "5 min",
+  duration: video.duration || formatDurationLabel(video.durationSeconds || 300),
+  durationSeconds: Number(video.durationSeconds || 300),
   loomUrl: video.loomUrl,
   summary: video.summary || "This video was synced from the DSA LP VIDEOS FILE Excel sheet.",
   resources: Array.isArray(video.resources) ? video.resources.map((resource, resourceIndex) => ({
@@ -127,7 +140,7 @@ function lessonSignature(lessons) {
     const resources = Array.isArray(lesson.resources)
       ? lesson.resources.map((resource) => `${resource.title}|${resource.url}|${resource.type}`).join(";;")
       : "";
-    return `${lesson.title}|${lesson.loomUrl}|${lesson.summary}|${resources}`;
+    return `${lesson.title}|${lesson.loomUrl}|${lesson.summary}|${lesson.durationSeconds}|${resources}`;
   }).join("::");
 }
 
@@ -764,6 +777,8 @@ function currentWatchSeconds(lessonId) {
 }
 
 function requiredWatchSeconds(lesson) {
+  const savedSeconds = Number(lesson?.durationSeconds || 0);
+  if (savedSeconds > 0) return Math.max(1, Math.round(savedSeconds));
   const duration = String(lesson?.duration || "");
   const minuteMatch = duration.match(/(\d+(?:\.\d+)?)\s*min/i);
   const secondMatch = duration.match(/(\d+(?:\.\d+)?)\s*sec/i);
@@ -776,6 +791,15 @@ function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatDurationLabel(totalSeconds) {
+  const seconds = Math.max(1, Math.round(Number(totalSeconds || 0)));
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  if (minutes && remainder) return `${minutes} min ${remainder} sec`;
+  if (minutes) return `${minutes} min`;
+  return `${remainder} sec`;
 }
 
 function showConfetti() {

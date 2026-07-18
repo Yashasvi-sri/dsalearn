@@ -36,7 +36,12 @@ module.exports = async function handler(request, response) {
     if (body.action === "reset-password") return resetPassword(response, body);
     sendJson(response, 400, { error: "Unknown action." });
   } catch (error) {
-    sendJson(response, 500, { error: "Intern account service failed." });
+    console.error("Intern account service failed:", {
+      code: error.code,
+      message: error.message,
+      routine: error.routine
+    });
+    sendJson(response, 500, { error: databaseErrorMessage(error) });
   }
 };
 
@@ -68,10 +73,9 @@ function readJson(request) {
 }
 
 async function ensureSchema() {
-  await pool.query("create extension if not exists pgcrypto;");
   await pool.query(`
     create table if not exists interns (
-      id uuid primary key default gen_random_uuid(),
+      id text primary key default ('intern-' || md5(random()::text || clock_timestamp()::text)),
       name text not null,
       email text not null unique,
       password text not null,
@@ -200,4 +204,23 @@ function cleanEmail(value) {
 
 function cleanText(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function databaseErrorMessage(error) {
+  if (error.code === "28P01") {
+    return "Database password is incorrect. Please update DATABASE_URL in Vercel with the latest Supabase password and redeploy.";
+  }
+  if (error.code === "ENOTFOUND") {
+    return "Database host was not found. Please check the Supabase connection string in Vercel.";
+  }
+  if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT" || error.code === "ENETUNREACH") {
+    return "Database connection could not be reached. Try Supabase's pooled connection string in Vercel and redeploy.";
+  }
+  if (String(error.message || "").toLowerCase().includes("password authentication failed")) {
+    return "Database password is incorrect. Please update DATABASE_URL in Vercel and redeploy.";
+  }
+  if (String(error.message || "").toLowerCase().includes("invalid connection string")) {
+    return "DATABASE_URL is not formatted correctly. Check special characters like %, #, @, :, /, ?, and &.";
+  }
+  return `Intern account service failed: ${error.code || error.message || "unknown database error"}`;
 }

@@ -100,6 +100,7 @@ const icons = {
 const WATCH_TIMER_INTERVAL_MS = 1000;
 const confettiColors = ["#b53524", "#6d4fb3", "#2e7d4f", "#b06c1d", "#fff1e6"];
 let activeWatchTimer = null;
+let activeWatchSession = null;
 
 const state = {
   lessons: readStore("dsa_lessons", initialLessons),
@@ -702,6 +703,7 @@ function authSubmit(event) {
 }
 
 function markComplete(lessonId) {
+  updateActiveWatchProgress();
   const lesson = state.lessons.find((item) => item.id === lessonId);
   if (!lesson || currentCompleted().includes(lessonId)) return;
   if (lesson.loomUrl && currentWatchSeconds(lessonId) < requiredWatchSeconds(lesson)) return;
@@ -720,22 +722,14 @@ function startLessonWatchTimer() {
   if (!lesson || !lesson.loomUrl || currentCompleted().includes(lesson.id)) return;
   if (currentWatchSeconds(lesson.id) >= requiredWatchSeconds(lesson)) return;
 
+  activeWatchSession = {
+    email: state.session.email,
+    lessonId: lesson.id,
+    startedAt: Date.now(),
+    baseSeconds: currentWatchSeconds(lesson.id)
+  };
   activeWatchTimer = window.setInterval(() => {
-    if (document.hidden) return;
-    const email = state.session.email;
-    const currentUserProgress = state.watchProgress[email] || {};
-    const nextSeconds = Math.min(
-      requiredWatchSeconds(lesson),
-      (currentUserProgress[lesson.id] || 0) + 1
-    );
-
-    state.watchProgress[email] = {
-      ...currentUserProgress,
-      [lesson.id]: nextSeconds
-    };
-    writeStore("dsa_watch_progress", state.watchProgress);
-    updateWatchGate(lesson, nextSeconds);
-
+    const nextSeconds = updateActiveWatchProgress();
     if (nextSeconds >= requiredWatchSeconds(lesson)) {
       stopLessonWatchTimer();
     }
@@ -743,9 +737,32 @@ function startLessonWatchTimer() {
 }
 
 function stopLessonWatchTimer() {
+  updateActiveWatchProgress();
   if (!activeWatchTimer) return;
   window.clearInterval(activeWatchTimer);
   activeWatchTimer = null;
+  activeWatchSession = null;
+}
+
+function updateActiveWatchProgress() {
+  if (!activeWatchSession) return 0;
+  const lesson = state.lessons.find((item) => item.id === activeWatchSession.lessonId);
+  if (!lesson) return 0;
+  const elapsedSeconds = Math.floor((Date.now() - activeWatchSession.startedAt) / 1000);
+  const nextSeconds = Math.min(
+    requiredWatchSeconds(lesson),
+    activeWatchSession.baseSeconds + elapsedSeconds
+  );
+  const currentUserProgress = state.watchProgress[activeWatchSession.email] || {};
+  if (nextSeconds > Number(currentUserProgress[lesson.id] || 0)) {
+    state.watchProgress[activeWatchSession.email] = {
+      ...currentUserProgress,
+      [lesson.id]: nextSeconds
+    };
+    writeStore("dsa_watch_progress", state.watchProgress);
+  }
+  updateWatchGate(lesson, nextSeconds);
+  return nextSeconds;
 }
 
 function updateWatchGate(lesson, watchedSeconds) {
@@ -951,6 +968,10 @@ function makeId() {
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
+
+window.addEventListener("focus", updateActiveWatchProgress);
+document.addEventListener("visibilitychange", updateActiveWatchProgress);
+window.addEventListener("beforeunload", stopLessonWatchTimer);
 
 render();
 loadSyncedVideos();

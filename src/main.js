@@ -7,6 +7,7 @@ const adminAccount = {
 
 const YASH_ASSISTANT_URL = "https://chatgpt.com/g/g-6a5354a7412c8191af5748f47ff577fe-yash";
 const PORTAL_GUIDE_URL = "https://www.loom.com/share/6dcbd61b938c4206b869abb03c449f90";
+const INTERN_API_URL = "/api/interns";
 
 const defaultVideoRows = [
   {
@@ -489,7 +490,7 @@ function adminPage() {
         </section>
         <section class="admin-panel">
           <h3>Intern accounts</h3>
-          <p class="muted">This list keeps each intern account record with status and account activity dates. The export keeps only name, email ID, and password.</p>
+          <p class="muted">This list syncs with the shared Supabase database when the portal is deployed. The export keeps only name, email ID, and password.</p>
           <div class="intern-list">
             ${state.interns.length === 0 ? `<p class="muted">No intern accounts yet.</p>` : ""}
             ${state.interns.map((intern) => `
@@ -519,6 +520,9 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.view = button.dataset.view;
       render();
+      if (state.view === "admin" && state.session?.role === "admin") {
+        syncInternsFromApi();
+      }
     });
   });
 
@@ -618,15 +622,21 @@ function bindEvents() {
   });
 
   document.querySelectorAll("[data-signout-intern]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const email = button.dataset.signoutIntern;
-      state.interns = state.interns.map((intern) => intern.email === email ? {
+      const apiResult = await internApi("signout", { email });
+      if (apiResult?.intern) {
+        state.interns = replaceIntern(state.interns, apiResult.intern);
+      } else {
+        state.interns = state.interns.map((intern) => intern.email === email ? {
         ...intern,
         active: false,
         signedOutAt: new Date().toLocaleString()
-      } : intern);
+        } : intern);
+      }
       writeStore("dsa_interns", state.interns);
       render();
+      syncInternsFromApi();
     });
   });
 
@@ -646,7 +656,7 @@ function setAuthMode(mode) {
   hidePasswordReset();
 }
 
-function authSubmit(event) {
+async function authSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const data = new FormData(form);
@@ -659,17 +669,21 @@ function authSubmit(event) {
       state.session = adminAccount;
       writeStore("dsa_session", state.session);
       render();
+      syncInternsFromApi();
       return;
     }
-    const intern = state.interns.find((item) => item.email === email && item.password === password);
+    const apiLogin = await internApi("login", { email, password });
+    const intern = apiLogin?.intern || state.interns.find((item) => item.email === email && item.password === password);
     if (!intern) {
-      message.textContent = "No matching account found. Create an intern account or use admin credentials.";
+      message.textContent = apiLogin?.error || "No matching account found. Create an intern account or use admin credentials.";
       return;
     }
     if (!intern.active) {
       message.textContent = "This intern account has been signed out by admin and cannot access the portal.";
       return;
     }
+    state.interns = replaceIntern(state.interns, intern);
+    writeStore("dsa_interns", state.interns);
     state.session = { name: intern.name, email: intern.email, role: "intern" };
     writeStore("dsa_session", state.session);
     render();
@@ -681,6 +695,21 @@ function authSubmit(event) {
     message.textContent = "Please enter name, email, and password.";
     return;
   }
+  const apiSignup = await internApi("signup", { name, email, password });
+  if (apiSignup?.intern) {
+    const intern = apiSignup.intern;
+    state.interns = replaceIntern(state.interns, intern);
+    writeStore("dsa_interns", state.interns);
+    state.session = { name: intern.name, email: intern.email, role: "intern" };
+    writeStore("dsa_session", state.session);
+    render();
+    return;
+  }
+  if (apiSignup?.error && apiSignup.available !== false) {
+    message.textContent = apiSignup.error;
+    return;
+  }
+
   const existingIntern = state.interns.find((intern) => intern.email === email);
   if (existingIntern && existingIntern.active) {
     message.textContent = "An account already exists for this email.";
@@ -862,19 +891,32 @@ function hidePasswordReset() {
   document.getElementById("reset-message").textContent = "";
 }
 
-function passwordResetSubmit(event) {
+async function passwordResetSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const data = new FormData(form);
   const email = String(data.get("resetEmail") || "").trim().toLowerCase();
   const newPassword = String(data.get("newPassword") || "");
   const message = document.getElementById("reset-message");
-  const intern = state.interns.find((item) => item.email === email);
 
   if (!email || !newPassword) {
     message.textContent = "Please enter your email ID and new password.";
     return;
   }
+  const apiReset = await internApi("reset-password", { email, password: newPassword });
+  if (apiReset?.intern) {
+    state.interns = replaceIntern(state.interns, apiReset.intern);
+    writeStore("dsa_interns", state.interns);
+    form.reset();
+    message.textContent = "Password reset email confirmed. You can now log in with the new password.";
+    return;
+  }
+  if (apiReset?.error && apiReset.available !== false) {
+    message.textContent = apiReset.error;
+    return;
+  }
+
+  const intern = state.interns.find((item) => item.email === email);
   if (!intern) {
     message.textContent = "No intern account exists for this email ID.";
     return;
@@ -948,7 +990,10 @@ function fileTypeLabel(fileName) {
   return labels[extension] || "Uploaded file";
 }
 
-function exportCsv() {
+async function exportCsv() {
+  if (state.session?.role === "admin") {
+    await syncInternsFromApi(false);
+  }
   const header = ["Name", "Email ID", "Password"];
   const rows = state.interns.map((intern) => [
     intern.name,
@@ -965,6 +1010,51 @@ function exportCsv() {
   link.download = "dsa-intern-accounts-google-sheet.csv";
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function syncInternsFromApi(shouldRender = true) {
+  if (!window.fetch) return false;
+  try {
+    const response = await fetch(INTERN_API_URL, { cache: "no-store" });
+    if (!response.ok) return false;
+    const data = await response.json();
+    if (!Array.isArray(data.interns)) return false;
+    state.interns = normalizeInterns(data.interns);
+    writeStore("dsa_interns", state.interns);
+    if (shouldRender && state.session?.role === "admin" && state.view === "admin") {
+      render();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function internApi(action, payload) {
+  if (!window.fetch) return { available: false };
+  try {
+    const response = await fetch(INTERN_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload })
+    });
+    const data = await response.json().catch(() => ({}));
+    return {
+      ...data,
+      available: response.status !== 404,
+      ok: response.ok
+    };
+  } catch {
+    return { available: false };
+  }
+}
+
+function replaceIntern(interns, nextIntern) {
+  const normalized = normalizeInterns([nextIntern])[0];
+  const exists = interns.some((intern) => intern.email === normalized.email);
+  return exists
+    ? interns.map((intern) => intern.email === normalized.email ? normalized : intern)
+    : [...interns, normalized];
 }
 
 function toEmbedUrl(url) {

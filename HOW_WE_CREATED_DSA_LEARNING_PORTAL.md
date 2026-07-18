@@ -309,6 +309,13 @@ The portal stores information locally in the browser, using keys like:
 
 This means data is saved in that browser on that computer. It is not a shared cloud database.
 
+After the Supabase update, deployed intern accounts can also sync through the shared online database using the `/api/interns` Vercel API route. Browser storage remains useful as a local fallback, but the intended deployed flow is:
+
+- Any intern signs up from any laptop or IP address.
+- The portal sends that account to the Supabase-backed API.
+- Admin Controls reads the shared intern list from Supabase.
+- Admin can see all deployed intern accounts in one place.
+
 ### Dashboard
 
 After login, interns see:
@@ -418,6 +425,8 @@ From there, admin can:
 - Sign out interns.
 - Export intern account CSV.
 
+In the deployed version, the intern list is intended to come from Supabase through the secure Vercel API route. This is what allows admin to see intern accounts created from different devices and locations.
+
 ### Intern Account Export
 
 The export button creates:
@@ -440,6 +449,8 @@ The admin screen itself shows more details, including:
 - Password reset date.
 
 This matches the later account-records request: the CSV should stay focused on the repository of intern login details, while the admin screen can show operational status and history.
+
+When Supabase is configured on Vercel, this export uses the synced shared intern list, so it can include interns who created accounts from other laptops or IP addresses.
 
 ### Signing Out Interns
 
@@ -487,7 +498,7 @@ The video completion gate also has an important technical detail: Loom embeds do
 
 The current version works as a local learning portal, but these are important limitations:
 
-- Intern accounts are stored in browser storage, not a secure database.
+- Intern accounts can sync through Supabase when Vercel has `DATABASE_URL` configured, but local browser storage is still used as a fallback when the API is unavailable.
 - Passwords are stored as plain text in local browser storage.
 - The admin credentials are hard-coded in `src/main.js`.
 - File uploads are saved as browser data URLs, which can hit browser storage limits.
@@ -496,6 +507,8 @@ The current version works as a local learning portal, but these are important li
 - The Excel sync depends on the local file path `C:\Users\123pr\Desktop\DSA LP VIDEOS FILE.xlsx`.
 - Static hosting on Vercel will not automatically run the local Python sync script.
 - The video completion gate is based on time spent on the lesson page, because Loom iframe embeds do not expose a dependable direct completion event to this static app.
+
+Important deployment note: the Supabase direct connection string must be saved privately in Vercel as `DATABASE_URL`. It should never be committed into GitHub or placed directly in frontend JavaScript.
 
 ## 9. How To Run The Portal
 
